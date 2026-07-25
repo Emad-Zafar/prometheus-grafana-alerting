@@ -1,0 +1,39 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 4h
+
+receivers:
+  # Empty by default so the stack starts without any external account.
+  # Uncomment one block below and fill in your details to actually get notified.
+  - name: default
+
+    # Slack. Set SLACK_WEBHOOK_URL in your .env, then uncomment.
+    # slack_configs:
+    #   - api_url: ${SLACK_WEBHOOK_URL}
+    #     channel: '#alerts'
+    #     send_resolved: true
+    #     title: '{{ .CommonAnnotations.summary }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+    # Email through an SMTP server.
+    # email_configs:
+    #   - to: 'oncall@example.com'
+    #     from: 'alerts@example.com'
+    #     smarthost: 'smtp.example.com:587'
+    #     auth_username: 'alerts@example.com'
+    #     auth_password: 'change-me'
+    #     send_resolved: true
+
+    # AWS SNS. Uses the container's IAM role or AWS credentials. Set AWS_REGION
+    # and the topic ARN, and add --config.expand-env is already enabled.
+    # sns_configs:
+    #   - sigv4:
+    #       region: ${AWS_REGION}
+    #     topic_arn: arn:aws:sns:${AWS_REGION}:123456789012:my-alerts-topic
+    #     subject: 'Alert: {{ .CommonAnnotations.summary }}'
+    #     message: '{{ template "sns.default.message" . }}'

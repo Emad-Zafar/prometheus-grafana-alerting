@@ -1,0 +1,74 @@
+groups:
+  - name: container_resource_alerts
+    rules:
+      # Any container over 80% CPU for 2 minutes.
+      - alert: HighContainerCPU
+        expr: |
+          (
+            sum by (name, instance) (
+              rate(container_cpu_usage_seconds_total{
+                name!="",
+                name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"
+              }[2m])
+            ) * 100
+          ) > 80
+        for: 2m
+        labels:
+          severity: warning
+          alerttype: resource
+        annotations:
+          summary: "Container {{ $labels.name }} has high CPU usage"
+          description: |
+            Container {{ $labels.name }} on {{ $labels.instance }} has been over
+            80% CPU for more than 2 minutes. Current value {{ $value | printf "%.2f" }}%.
+            Check the container logs and whether it is under unusual load.
+
+      # Any container over 85% of its memory limit for 2 minutes. Falls back to
+      # a share of total host memory when the container has no limit set.
+      - alert: HighContainerMemory
+        expr: |
+          (
+            (
+              container_memory_working_set_bytes{name!="", name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"}
+              /
+              container_spec_memory_limit_bytes{name!="", name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"}
+            ) * 100 > 85
+            and
+            container_spec_memory_limit_bytes{name!="", name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"} > 0
+          )
+          or
+          (
+            (
+              container_memory_working_set_bytes{name!="", name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"}
+              /
+              scalar(node_memory_MemTotal_bytes)
+            ) * 100 > 85
+            and
+            container_spec_memory_limit_bytes{name!="", name!~"prometheus|grafana|cadvisor|node-exporter|alertmanager"} == 0
+          )
+        for: 2m
+        labels:
+          severity: warning
+          alerttype: resource
+        annotations:
+          summary: "Container {{ $labels.name }} has high memory usage"
+          description: |
+            Container {{ $labels.name }} on {{ $labels.instance }} has been over
+            85% memory for more than 2 minutes. Current value {{ $value | printf "%.2f" }}%.
+            Look for a memory leak, a missing limit, or heavy data processing.
+
+  - name: monitoring_health
+    rules:
+      # The metrics pipeline itself is down.
+      - alert: MonitoringDown
+        expr: up{job="cadvisor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          alerttype: system
+        annotations:
+          summary: "Container metrics collection is down"
+          description: |
+            cAdvisor has been unreachable for more than 1 minute, so container
+            metrics are not being collected. Check "docker compose ps" and
+            restart cadvisor if needed.

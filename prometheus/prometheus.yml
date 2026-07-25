@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: docker-monitoring
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Per container CPU, memory, network from cAdvisor.
+  - job_name: cadvisor
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Host level CPU, memory, disk from node-exporter.
+  - job_name: node-exporter
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Your own service. Point this at the container name and metrics port your
+  # app exposes. Spring Boot Actuator serves /actuator/prometheus, most other
+  # stacks serve /metrics. Add one job per service, or list several targets.
+  # - job_name: my-service
+  #   metrics_path: /actuator/prometheus
+  #   static_configs:
+  #     - targets: ['my-service:8080']
