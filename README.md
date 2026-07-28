@@ -15,6 +15,30 @@ Docker containers on one or a few hosts. One Prometheus scrapes the local
 cAdvisor and node-exporter. For a large dynamic fleet you would move to service
 discovery, but this is the same starting shape.
 
+## How it works
+
+The thing to understand up front is that Prometheus pulls. On a schedule it
+reaches out and scrapes a metrics endpoint from each target. cAdvisor and
+node-exporter are small services that expose such an endpoint, one for
+containers and one for the host, so you get useful numbers before your app
+exposes anything.
+
+- cAdvisor and node-exporter produce the raw metrics.
+- Prometheus scrapes them, stores them, and evaluates the alert rules.
+- Alertmanager receives firing alerts and routes them to Slack, email or SNS.
+- Grafana graphs everything, using a query language called PromQL.
+
+```
+cAdvisor / node-exporter / your app  ->  Prometheus  ->  Alertmanager -> Slack/email/SNS
+                                              |
+                                              v
+                                           Grafana
+```
+
+The build below is six files: the scrape config, the alert rules, the alert
+routing, the Grafana connection, an env file, and the compose file that runs
+them.
+
 ## Prerequisites
 
 - Docker and Docker Compose on the host
